@@ -1,4 +1,5 @@
 import argparse
+import base64
 import binascii
 import ipaddress
 import json
@@ -37,14 +38,23 @@ class TheSilent:
                             break
 
                     if response:
-                        data = "{" + "".join(response.split("{")[1:]).lower()
+                        data = "{" + "".join(response.split("{")[1:])
                         if not data.endswith("}"):
                             data += "}"
+
+                        data = data.encode("utf8").decode("unicode_escape")
                             
-                        max_players = int(re.sub(r"[\"\'\:]","",re.findall(r"max(.+)(?=[,])",data)[0]).split(",")[0])
-                        online_players = int(re.sub(r"[\"\'\:]","",re.findall(r"online(.+)(?=[,])",data)[0]).split(",")[0])
-                        protocol = int(re.sub(r"[\"\'\:]","",re.findall(r"protocol(.+)(?=[\}])",data)[0]).split("}")[0])
+                        max_players = int(re.sub(r"[\"\'\:]","",re.findall(r"max(.+)(?=[,])",data.lower())[0]).split(",")[0])
+                        online_players = int(re.sub(r"[\"\'\:]","",re.findall(r"online(.+)(?=[,])",data.lower())[0]).split(",")[0])
+                        protocol = int(re.sub(r"[\"\'\:]","",re.findall(r"protocol(.+)(?=[\}])",data.lower())[0]).split("}")[0])
+
+                        favicon = re.sub(r"[\"\']","",re.findall(r"data\:image\/png\;base64\,(.+)(?=[\'\"\}])",data)[0])
+                        image = base64.b64decode(favicon)
+                        with open(f"{host}.png","wb") as file:
+                            file.write(image)
+                        
                         hits.update({self.host:{"max players":max_players,"online players":online_players,"protocol":protocol,"favicon":favicon}})
+
                 except:
                     pass
 
@@ -60,21 +70,30 @@ class TheSilent:
                     s.send(i)
                 response = ""
                 while True:
-                    new_response = s.recv(2**8).decode("ascii",errors="ignore").replace("\\n","").replace("\n","").replace(" ","")
+                    new_response = s.recv(2**24).decode("utf8",errors="ignore").replace("\\n","").replace("\n","").replace(" ","")
                     if new_response:
                         response += new_response
                     else:
                         break
 
                 if response:
-                    data = "{" + "".join(response.split("{")[1:]).lower()
+                    data = "{" + "".join(response.split("{")[1:])
                     if not data.endswith("}"):
                         data += "}"
+
+                    data = data.encode("utf8").decode("unicode_escape")
                         
-                    max_players = int(re.sub(r"[\"\'\:]","",re.findall(r"max(.+)(?=[,])",data)[0]).split(",")[0])
-                    online_players = int(re.sub(r"[\"\'\:]","",re.findall(r"online(.+)(?=[,])",data)[0]).split(",")[0])
-                    protocol = int(re.sub(r"[\"\'\:]","",re.findall(r"protocol(.+)(?=[\}])",data)[0]).split("}")[0])
-                    hits.update({self.host:{"max players":max_players,"online players":online_players,"protocol":protocol,"favicon":favicon}})
+                    max_players = int(re.sub(r"[\"\'\:]","",re.findall(r"max(.+)(?=[,])",data.lower())[0]).split(",")[0])
+                    online_players = int(re.sub(r"[\"\'\:]","",re.findall(r"online(.+)(?=[,])",data.lower())[0]).split(",")[0])
+                    protocol = int(re.sub(r"[\"\'\:]","",re.findall(r"protocol(.+)(?=[\}])",data.lower())[0]).split("}")[0])
+
+                    favicon = re.sub(r"[\"\']","",re.findall(r"data\:image\/png\;base64\,(.+)(?=[\'\"\}])",data)[0])
+                    image = base64.b64decode(favicon)
+                    with open(f"{self.host}.png","wb") as file:
+                        file.write(image)
+
+                    hits.update({self.host:{"max players":max_players,"online players":online_players,"protocol":protocol}})
+
             except:
                 pass
 
